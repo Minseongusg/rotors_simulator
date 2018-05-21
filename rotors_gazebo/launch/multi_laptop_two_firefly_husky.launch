@@ -68,7 +68,7 @@
     <arg name="robot_namespace" value="husky1"/>
     <arg name="x" value="-5.0"/>
     <arg name="robot_description"
-       default="$(find husky_description)/urdf/husky_lidar_1.urdf.xacro"/>
+       default="$(find husky_description)/urdf/husky_lidar_multi.urdf.xacro"/>
 
 
   </include>
@@ -83,7 +83,7 @@
     <arg name="robot_namespace" value="husky2"/>
     <arg name="x" value="5.0"/>
     <arg name="robot_description"
-       default="$(find husky_description)/urdf/husky_lidar_2.urdf.xacro"/>
+       default="$(find husky_description)/urdf/husky_lidar_multi.urdf.xacro"/>
   </include>
 
   </group>
