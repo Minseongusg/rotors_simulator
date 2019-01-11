@@ -336,7 +336,7 @@ void GazeboBagPlugin::LogGroundTruth(const common::Time now) {
   geometry_msgs::TwistStamped twist_msg;
 
   // Get pose and update the message.
-  math::Pose pose = link_->GetWorldPose();
+  ignition::math::Pose3d pose = link_->GetWorldPose();
   pose_msg.header.frame_id = frame_id_;
   pose_msg.header.stamp.sec = now.sec;
   pose_msg.header.stamp.nsec = now.nsec;
@@ -351,8 +351,8 @@ void GazeboBagPlugin::LogGroundTruth(const common::Time now) {
   writeBag(namespace_ + "/" + ground_truth_pose_topic_, ros_now, pose_msg);
 
   // Get twist and update the message.
-  math::Vector3 linear_veloctiy = link_->GetWorldLinearVel();
-  math::Vector3 angular_veloctiy = link_->GetWorldAngularVel();
+  ignition::math::Vector3d linear_veloctiy = link_->GetWorldLinearVel();
+  ignition::math::Vector3d angular_veloctiy = link_->GetWorldAngularVel();
   twist_msg.header.frame_id = frame_id_;
   twist_msg.header.stamp.sec = now.sec;
   twist_msg.header.stamp.nsec = now.nsec;
