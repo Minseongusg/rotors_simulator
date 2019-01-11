@@ -662,7 +662,7 @@ void GazeboMavlinkInterface::ImuCallback(ImuPtr& imu_message) {
   // r - rotors imu frame (FLU), forward, left, up
   // b - px4 (FRD) forward, right down
   // n - px4 (NED) north, east, down
-  math::Quaternion q_gr = math::Quaternion(
+  ignition::math::Quaternion q_gr = ignition::math::Quaternion(
     imu_message->orientation().w(),
     imu_message->orientation().x(),
     imu_message->orientation().y(),
