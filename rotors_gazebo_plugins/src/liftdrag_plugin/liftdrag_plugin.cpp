@@ -179,7 +179,7 @@ void LiftDragPlugin::OnUpdate()
   // this->velSmooth = e*vel + (1.0 - e)*velSmooth;
   // vel = this->velSmooth;
 
-  if (vel.GetLength() <= 0.01)
+  if (vel.Length() <= 0.01)
     return;
 
   // pose of body
@@ -388,9 +388,9 @@ void LiftDragPlugin::OnUpdate()
     gzdbg << "Link: [" << this->link->GetName()
           << "] pose: [" << pose
           << "] dynamic pressure: [" << q << "]\n";
-    gzdbg << "spd: [" << vel.GetLength()
+    gzdbg << "spd: [" << vel.Length()
           << "] vel: [" << vel << "]\n";
-    gzdbg << "LD plane spd: [" << velInLDPlane.GetLength()
+    gzdbg << "LD plane spd: [" << velInLDPlane.Length()
           << "] vel : [" << velInLDPlane << "]\n";
     gzdbg << "forward (inertial): " << forwardI << "\n";
     gzdbg << "upward (inertial): " << upwardI << "\n";
