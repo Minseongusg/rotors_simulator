@@ -23,7 +23,7 @@
 #include <octomap_msgs/conversions.h>
 #include <gazebo/common/Time.hh>
 #include <gazebo/common/CommonTypes.hh>
-#include <gazebo/math/Vector3.hh>
+#include <ignition/math.hh>
 
 namespace gazebo {
 
@@ -96,8 +96,8 @@ bool OctomapFromGazeboWorld::ServiceCallback(
   res.origin_altitude = origin_spherical.Z();
   return true;
 #else
-  math::Vector3 origin_cartesian(0.0, 0.0, 0.0);
-  math::Vector3 origin_spherical = sphericalCoordinates->
+  ignition::math::Vector3d origin_cartesian(0.0, 0.0, 0.0);
+  ignition::math::Vector3d origin_spherical = sphericalCoordinates->
          SphericalFromLocal(origin_cartesian);
 
   res.origin_latitude = origin_spherical.x;
@@ -108,8 +108,8 @@ bool OctomapFromGazeboWorld::ServiceCallback(
 }
 
 void OctomapFromGazeboWorld::FloodFill(
-    const math::Vector3& seed_point, const math::Vector3& bounding_box_origin,
-    const math::Vector3& bounding_box_lengths, const double leaf_size) {
+    const ignition::math::Vector3d& seed_point, const ignition::math::Vector3d& bounding_box_origin,
+    const ignition::math::Vector3d& bounding_box_lengths, const double leaf_size) {
   octomap::OcTreeNode* seed =
       octomap_->search(seed_point.x, seed_point.y, seed_point.z);
   // do nothing if point occupied
@@ -143,11 +143,11 @@ void OctomapFromGazeboWorld::FloodFill(
   }
 }
 
-bool OctomapFromGazeboWorld::CheckIfInterest(const math::Vector3& central_point,
+bool OctomapFromGazeboWorld::CheckIfInterest(const ignition::math::Vector3d& central_point,
                                              gazebo::physics::RayShapePtr ray,
                                              const double leaf_size) {
-  math::Vector3 start_point = central_point;
-  math::Vector3 end_point = central_point;
+  ignition::math::Vector3d start_point = central_point;
+  ignition::math::Vector3d end_point = central_point;
 
   double dist;
   std::string entity_name;
@@ -184,12 +184,12 @@ void OctomapFromGazeboWorld::CreateOctomap(
     const rotors_comm::Octomap::Request& msg) {
   const double epsilon = 0.00001;
   const int far_away = 100000;
-  math::Vector3 bounding_box_origin(msg.bounding_box_origin.x,
+  ignition::math::Vector3d bounding_box_origin(msg.bounding_box_origin.x,
                                     msg.bounding_box_origin.y,
                                     msg.bounding_box_origin.z);
   // epsilion prevents undefiened behaviour if a point is inserted exactly
   // between two octomap cells
-  math::Vector3 bounding_box_lengths(msg.bounding_box_lengths.x + epsilon,
+  ignition::math::Vector3d bounding_box_lengths(msg.bounding_box_lengths.x + epsilon,
                                      msg.bounding_box_lengths.y + epsilon,
                                      msg.bounding_box_lengths.z + epsilon);
   double leaf_size = msg.leaf_size;
@@ -226,7 +226,7 @@ void OctomapFromGazeboWorld::CreateOctomap(
                       bounding_box_lengths.z / 2;
            z < bounding_box_origin.z + bounding_box_lengths.z / 2;
            z += leaf_size) {
-        math::Vector3 point(x, y, z);
+        ignition::math::Vector3d point(x, y, z);
         if (CheckIfInterest(point, ray, leaf_size)) {
           octomap_->setNodeValue(x, y, z, 1);
         }
@@ -238,12 +238,12 @@ void OctomapFromGazeboWorld::CreateOctomap(
 
   // flood fill from top and bottom
   std::cout << "\rFlood filling freespace...                                  ";
-  FloodFill(math::Vector3(bounding_box_origin.x + leaf_size / 2,
+  FloodFill(ignition::math::Vector3d(bounding_box_origin.x + leaf_size / 2,
                           bounding_box_origin.y + leaf_size / 2,
                           bounding_box_origin.z + bounding_box_lengths.z / 2 -
                               leaf_size / 2),
             bounding_box_origin, bounding_box_lengths, leaf_size);
-  FloodFill(math::Vector3(bounding_box_origin.x + leaf_size / 2,
+  FloodFill(ignition::math::Vector3d(bounding_box_origin.x + leaf_size / 2,
                           bounding_box_origin.y + leaf_size / 2,
                           bounding_box_origin.z - bounding_box_lengths.z / 2 +
                               leaf_size / 2),
