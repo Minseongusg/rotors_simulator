@@ -60,7 +60,7 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   node_handle_->Init();
 
   if (_sdf->HasElement("xyzOffset"))
-    xyz_offset_ = _sdf->GetElement("xyzOffset")->Get<math::Vector3>();
+    xyz_offset_ = _sdf->GetElement("xyzOffset")->Get<ignition::math::Vector3d>();
   else
     gzerr << "[gazebo_wind_plugin] Please specify a xyzOffset.\n";
 
@@ -75,7 +75,7 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
                       wind_speed_mean_);
   getSdfParam<double>(_sdf, "windSpeedVariance", wind_speed_variance_,
                       wind_speed_variance_);
-  getSdfParam<math::Vector3>(_sdf, "windDirection", wind_direction_,
+  getSdfParam<ignition::math::Vector3d>(_sdf, "windDirection", wind_direction_,
                       wind_direction_);
   // Check if a custom static wind field should be used.
   getSdfParam<bool>(_sdf, "useCustomStaticWindField", use_custom_static_wind_field_,
@@ -95,7 +95,7 @@ void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
                         wind_gust_force_mean_);
     getSdfParam<double>(_sdf, "windGustForceVariance", wind_gust_force_variance_,
                         wind_gust_force_variance_);
-    getSdfParam<math::Vector3>(_sdf, "windGustDirection", wind_gust_direction_,
+    getSdfParam<ignition::math::Vector3d>(_sdf, "windGustDirection", wind_gust_direction_,
                         wind_gust_direction_);
 
     wind_direction_.Normalize();
@@ -136,17 +136,17 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
   // Get the current simulation time.
   common::Time now = world_->GetSimTime();
   
-  math::Vector3 wind_velocity(0.0, 0.0, 0.0);
+  ignition::math::Vector3d wind_velocity(0.0, 0.0, 0.0);
 
   // Choose user-specified method for calculating wind velocity.
   if (!use_custom_static_wind_field_) {
     // Calculate the wind force.
     double wind_strength = wind_force_mean_;
-    math::Vector3 wind = wind_strength * wind_direction_;
+    ignition::math::Vector3d wind = wind_strength * wind_direction_;
     // Apply a force from the constant wind to the link.
     link_->AddForceAtRelativePosition(wind, xyz_offset_);
 
-    math::Vector3 wind_gust(0.0, 0.0, 0.0);
+    ignition::math::Vector3d wind_gust(0.0, 0.0, 0.0);
     // Calculate the wind gust force.
     if (now >= wind_gust_start_ && now < wind_gust_end_) {
       double wind_gust_strength = wind_gust_force_mean_;
@@ -177,7 +177,7 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
     wind_velocity = wind_speed_mean_ * wind_direction_;
   } else {
     // Get the current position of the aircraft in world coordinates.
-    math::Vector3 link_position = link_->GetWorldPose().pos;
+    ignition::math::Vector3d link_position = link_->GetWorldPose().pos;
 
     // Calculate the x, y index of the grid points with x, y-coordinate 
     // just smaller than or equal to aircraft x, y position.
@@ -252,7 +252,7 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
       }
 
       // Extract the wind velocities corresponding to each vertex.
-      math::Vector3 wind_at_vertices[n_vertices];
+      ignition::math::Vector3d wind_at_vertices[n_vertices];
       for (std::size_t i = 0u; i < n_vertices; ++i) {
         wind_at_vertices[i].x = u_[idx_x[i] + idx_y[i] * n_x_ + idx_z[i] * n_x_ * n_y_];
         wind_at_vertices[i].y = v_[idx_x[i] + idx_y[i] * n_x_ + idx_z[i] * n_x_ * n_y_];
@@ -406,28 +406,28 @@ void GazeboWindPlugin::ReadCustomWindField(std::string& custom_wind_field_path) 
 
 }
 
-math::Vector3 GazeboWindPlugin::LinearInterpolation(
-  double position, math::Vector3* values, double* points) const {
-  math::Vector3 value = values[0] + (values[1] - values[0]) /
+ignition::math::Vector3d GazeboWindPlugin::LinearInterpolation(
+  double position, ignition::math::Vector3d* values, double* points) const {
+  ignition::math::Vector3d value = values[0] + (values[1] - values[0]) /
                         (points[1] - points[0]) * (position - points[0]);
   return value;
 }
 
 math::Vector3 GazeboWindPlugin::BilinearInterpolation(
-  double* position, math::Vector3* values, double* points) const {
-  math::Vector3 intermediate_values[2] = { LinearInterpolation(
+  double* position, ignition::math::Vector3d* values, double* points) const {
+  ignition::math::Vector3d intermediate_values[2] = { LinearInterpolation(
                                              position[0], &(values[0]), &(points[0])),
                                            LinearInterpolation(
                                              position[0], &(values[2]), &(points[2])) };
-  math::Vector3 value = LinearInterpolation(
+  ignition::math::Vector3d value = LinearInterpolation(
                           position[1], intermediate_values, &(points[4]));
   return value;
 }
 
-math::Vector3 GazeboWindPlugin::TrilinearInterpolation(
-  math::Vector3 link_position, math::Vector3* values, double* points) const {
+ignition::math::Vector3d GazeboWindPlugin::TrilinearInterpolation(
+  ignition::math::Vector3d link_position, ignition::math::Vector3d* values, double* points) const {
   double position[3] = {link_position.x,link_position.y,link_position.z};
-  math::Vector3 intermediate_values[4] = { LinearInterpolation(
+  ignition::math::Vector3d intermediate_values[4] = { LinearInterpolation(
                                              position[2], &(values[0]), &(points[0])),
                                            LinearInterpolation(
                                              position[2], &(values[2]), &(points[2])),
@@ -435,7 +435,7 @@ math::Vector3 GazeboWindPlugin::TrilinearInterpolation(
                                              position[2], &(values[4]), &(points[4])),
                                            LinearInterpolation(
                                              position[2], &(values[6]), &(points[6])) };
-  math::Vector3 value = BilinearInterpolation(
+  ignition::math::Vector3d value = BilinearInterpolation(
     &(position[0]), intermediate_values, &(points[8]));
   return value;
 }
