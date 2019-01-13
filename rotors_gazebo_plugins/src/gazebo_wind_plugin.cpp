@@ -19,6 +19,10 @@
  * limitations under the License.
  */
 
+/*
+Modify for gazebo9 by Minseong Kim.
+*/
+
 #include "rotors_gazebo_plugins/gazebo_wind_plugin.h"
 
 #include <fstream>
@@ -29,7 +33,11 @@
 namespace gazebo {
 
 GazeboWindPlugin::~GazeboWindPlugin() {
-  event::Events::DisconnectWorldUpdateBegin(update_connection_);
+#if (GAZEBO_MAJOR_VERSION >= 8)
+  updateConnection.reset();
+#else
+  event::Events::DisconnectWorldUpdateBegin(updateConnection);
+#endif
 }
 
 void GazeboWindPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
@@ -134,7 +142,7 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
   }
 
   // Get the current simulation time.
-  common::Time now = world_->GetSimTime();
+  common::Time now = world_->SimTime();
   
   ignition::math::Vector3d wind_velocity(0.0, 0.0, 0.0);
 
@@ -177,7 +185,7 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
     wind_velocity = wind_speed_mean_ * wind_direction_;
   } else {
     // Get the current position of the aircraft in world coordinates.
-    ignition::math::Vector3d link_position = link_->GetWorldPose().pos;
+    ignition::math::Vector3d link_position = link_->WorldPose().pos;
 
     // Calculate the x, y index of the grid points with x, y-coordinate 
     // just smaller than or equal to aircraft x, y position.
