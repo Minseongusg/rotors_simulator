@@ -34,9 +34,9 @@ namespace gazebo {
 
 GazeboWindPlugin::~GazeboWindPlugin() {
 #if (GAZEBO_MAJOR_VERSION >= 8)
-  updateConnection.reset();
+  update_connection_.reset();
 #else
-  event::Events::DisconnectWorldUpdateBegin(updateConnection);
+  event::Events::DisconnectWorldUpdateBegin(update_connection_);
 #endif
 }
 
@@ -167,12 +167,12 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
     wrench_stamped_msg_.mutable_header()->mutable_stamp()->set_sec(now.sec);
     wrench_stamped_msg_.mutable_header()->mutable_stamp()->set_nsec(now.nsec);
 
-    wrench_stamped_msg_.mutable_wrench()->mutable_force()->set_x(wind.x +
-                                                                 wind_gust.x);
-    wrench_stamped_msg_.mutable_wrench()->mutable_force()->set_y(wind.y +
-                                                                 wind_gust.y);
-    wrench_stamped_msg_.mutable_wrench()->mutable_force()->set_z(wind.z +
-                                                                 wind_gust.z);
+    wrench_stamped_msg_.mutable_wrench()->mutable_force()->set_x(wind.X() +
+                                                                 wind_gust.X());
+    wrench_stamped_msg_.mutable_wrench()->mutable_force()->set_y(wind.Y() +
+                                                                 wind_gust.Y());
+    wrench_stamped_msg_.mutable_wrench()->mutable_force()->set_z(wind.Z() +
+                                                                 wind_gust.Z());
 
     // No torque due to wind, set x,y and z to 0.
     wrench_stamped_msg_.mutable_wrench()->mutable_torque()->set_x(0);
@@ -185,12 +185,12 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
     wind_velocity = wind_speed_mean_ * wind_direction_;
   } else {
     // Get the current position of the aircraft in world coordinates.
-    ignition::math::Vector3d link_position = link_->WorldPose().pos;
+    ignition::math::Vector3d link_position = link_->WorldPose().Pos();
 
     // Calculate the x, y index of the grid points with x, y-coordinate 
     // just smaller than or equal to aircraft x, y position.
-    std::size_t x_inf = floor((link_position.x - min_x_) / res_x_);
-    std::size_t y_inf = floor((link_position.y - min_y_) / res_y_);
+    std::size_t x_inf = floor((link_position.X() - min_x_) / res_x_);
+    std::size_t y_inf = floor((link_position.Y() - min_y_) / res_y_);
 
     // In case aircraft is on one of the boundary surfaces at max_x or max_y,
     // decrease x_inf, y_inf by one to have x_sup, y_sup on max_x, max_y.
@@ -218,7 +218,7 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
     float vertical_factors_columns[n_columns];
     for (std::size_t i = 0u; i < n_columns; ++i) {
       vertical_factors_columns[i] = (
-        link_position.z - bottom_z_[idx_x[2u * i] + idx_y[2u * i] * n_x_]) /
+        link_position.Z() - bottom_z_[idx_x[2u * i] + idx_y[2u * i] * n_x_]) /
         (top_z_[idx_x[2u * i] + idx_y[2u * i] * n_x_] - bottom_z_[idx_x[2u * i] + idx_y[2u * i] * n_x_]);
     }
     
@@ -262,9 +262,9 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
       // Extract the wind velocities corresponding to each vertex.
       ignition::math::Vector3d wind_at_vertices[n_vertices];
       for (std::size_t i = 0u; i < n_vertices; ++i) {
-        wind_at_vertices[i].x = u_[idx_x[i] + idx_y[i] * n_x_ + idx_z[i] * n_x_ * n_y_];
-        wind_at_vertices[i].y = v_[idx_x[i] + idx_y[i] * n_x_ + idx_z[i] * n_x_ * n_y_];
-        wind_at_vertices[i].z = w_[idx_x[i] + idx_y[i] * n_x_ + idx_z[i] * n_x_ * n_y_];
+        wind_at_vertices[i].X() = u_[idx_x[i] + idx_y[i] * n_x_ + idx_z[i] * n_x_ * n_y_];
+        wind_at_vertices[i].Y() = v_[idx_x[i] + idx_y[i] * n_x_ + idx_z[i] * n_x_ * n_y_];
+        wind_at_vertices[i].Z() = w_[idx_x[i] + idx_y[i] * n_x_ + idx_z[i] * n_x_ * n_y_];
       }
 
       // Extract the relevant coordinate of every point needed for trilinear 
@@ -298,9 +298,9 @@ void GazeboWindPlugin::OnUpdate(const common::UpdateInfo& _info) {
   wind_speed_msg_.mutable_header()->mutable_stamp()->set_sec(now.sec);
   wind_speed_msg_.mutable_header()->mutable_stamp()->set_nsec(now.nsec);
 
-  wind_speed_msg_.mutable_velocity()->set_x(wind_velocity.x);
-  wind_speed_msg_.mutable_velocity()->set_y(wind_velocity.y);
-  wind_speed_msg_.mutable_velocity()->set_z(wind_velocity.z);
+  wind_speed_msg_.mutable_velocity()->set_x(wind_velocity.X());
+  wind_speed_msg_.mutable_velocity()->set_y(wind_velocity.Y());
+  wind_speed_msg_.mutable_velocity()->set_z(wind_velocity.Z());
 
   wind_speed_pub_->Publish(wind_speed_msg_);
 }
@@ -421,7 +421,7 @@ ignition::math::Vector3d GazeboWindPlugin::LinearInterpolation(
   return value;
 }
 
-math::Vector3 GazeboWindPlugin::BilinearInterpolation(
+ignition::math::Vector3d GazeboWindPlugin::BilinearInterpolation(
   double* position, ignition::math::Vector3d* values, double* points) const {
   ignition::math::Vector3d intermediate_values[2] = { LinearInterpolation(
                                              position[0], &(values[0]), &(points[0])),
@@ -434,7 +434,7 @@ math::Vector3 GazeboWindPlugin::BilinearInterpolation(
 
 ignition::math::Vector3d GazeboWindPlugin::TrilinearInterpolation(
   ignition::math::Vector3d link_position, ignition::math::Vector3d* values, double* points) const {
-  double position[3] = {link_position.x,link_position.y,link_position.z};
+  double position[3] = {link_position.X(),link_position.Y(),link_position.Z()};
   ignition::math::Vector3d intermediate_values[4] = { LinearInterpolation(
                                              position[2], &(values[0]), &(points[0])),
                                            LinearInterpolation(
